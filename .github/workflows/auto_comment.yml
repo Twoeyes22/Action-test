@@ -13,24 +13,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Add comment to Issue or PR
-        uses: actions/github-script@v6
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const issueNumber = context.issue.number;
-            const repo = context.repo;
-            
-            let commentBody = "확인 필요";
-            
-            if (context.eventName === 'issue_comment') {
-              commentBody += `\n\nIssue Comment ${context.payload.action} by ${context.payload.comment.user.login}`;
-            } else if (context.eventName === 'pull_request') {
-              commentBody += `\n\nPull Request ${context.payload.action} by ${context.payload.pull_request.user.login}`;
-            }
-            
-            await github.rest.issues.createComment({
-              ...repo,
-              issue_number: issueNumber,
-              body: commentBody
-            });
+          python-version: '3.x'
+
+      - name: Add comment to Issue or PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          import os
+          import json
+          from github import Github
+
+          # GitHub 객체 초기화
+          g = Github(os.environ['GITHUB_TOKEN'])
+          repo = g.get_repo(os.environ['GITHUB_REPOSITORY'])
+
+          # 이벤트 정보 가져오기
+          with open(os.environ['GITHUB_EVENT_PATH']) as f:
+              event = json.load(f)
+
+          # 이슈 또는 PR 번호 가져오기
+          if 'issue' in event:
+              issue_number = event['issue']['number']
+          elif 'pull_request' in event:
+              issue_number = event['pull_request']['number']
+          else:
+              raise ValueError("Unable to determine issue or pull request number")
+
+          # 이슈 또는 PR 객체 가져오기
+          issue = repo.get_issue(number=issue_number)
+
+          # 댓글 내용 생성
+          comment_body = "확인 필요"
+
+          # 댓글 추가
+          issue.create_comment(comment_body)
+
+          print(f"댓글이 성공적으로 추가되었습니다. (이슈/PR #{issue_number})")
+        shell: python
