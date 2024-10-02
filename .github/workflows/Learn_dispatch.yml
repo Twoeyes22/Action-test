@@ -1,0 +1,44 @@
+name: Learn Workflow Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Your name'
+        required: true
+        default: 'GitHub User'
+      message:
+        description: 'Message to display'
+        required: true
+        default: 'Hello, World!'
+      environment:
+        description: 'Environment to run script'
+        type: choice
+        required: true
+        default: 'development'
+        options:
+        - development
+        - staging
+        - production
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Greet the user
+      run: |
+        echo "Hello, ${{ github.event.inputs.name }}!"
+        echo "Your message: ${{ github.event.inputs.message }}"
+        echo "Running in ${{ github.event.inputs.environment }} environment"
+    
+  example-job:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run a one-line script
+      run: echo "This is an example job triggered by workflow_dispatch"
+    - name: Run a multi-line script
+      run: |
+        echo "Add other actions to build,"
+        echo "test, and deploy your project."
+        echo "Environment: ${{ github.event.inputs.environment }}"
